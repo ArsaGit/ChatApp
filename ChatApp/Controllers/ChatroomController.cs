@@ -60,4 +60,18 @@ public class ChatroomController : ControllerBase
         await _context.SaveChangesAsync();
         return NoContent();
     }
+
+    [HttpPatch("{id:guid}")]
+    public async Task<IActionResult> UpdateRoom(
+        [FromRoute] Guid id, 
+        [FromBody] UpdateChatroomDto updateChatroomDto)
+    {
+        var room = await _context.Chatrooms.FindAsync(id);
+        if (room == null) return NotFound();
+
+        room.Name = updateChatroomDto.Name;
+        _context.Chatrooms.Update(room);
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
 }

@@ -58,4 +58,18 @@ public class UserController : ControllerBase
         await _context.SaveChangesAsync();
         return NoContent();
     }
+    
+    [HttpPatch("{id:guid}")]
+    public async Task<IActionResult> UpdateUser(
+        [FromRoute] Guid id, 
+        [FromBody] UpdateUserDto updateUserDto)
+    {
+        var user = await _context.Users.FindAsync(id);
+        if (user == null) return NotFound();
+
+        user.Name = updateUserDto.Name;
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
 }

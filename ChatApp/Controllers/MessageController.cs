@@ -21,9 +21,18 @@ public class MessageController : ControllerBase
     }
     
     [HttpGet]
-    public async Task<IActionResult> GetMessages()
+    public async Task<IActionResult> GetMessages(Guid? roomId)
     {
-        var messages = await _context.Messages.ToListAsync();
+        List<Message> messages;
+        if (roomId == null)
+        {
+            messages = await _context.Messages.ToListAsync();
+        }
+        else
+        {
+            messages = await _context.Messages.Where(m => m.RoomId.Equals(roomId))
+                .ToListAsync();
+        }
         var messageDtos = _mapper.Map<ICollection<MessageDto>>(messages);
         return Ok(messageDtos);
     }
@@ -37,11 +46,12 @@ public class MessageController : ControllerBase
     }
     
     [HttpPost]
-    public async Task<IActionResult> AddMessage([FromBody] CreateMessageDto messageDto)
+    public async Task<IActionResult> AddMessage([FromBody] CreateMessageDto createMessageDto)
     {
-        var message = _mapper.Map<Message>(messageDto);
+        var message = _mapper.Map<Message>(createMessageDto);
         _context.Messages.Add(message);
         await _context.SaveChangesAsync();
-        return Created($"/{message.Id}", message);
+        var messageDto = _mapper.Map<MessageDto>(message);
+        return Created($"/{messageDto.Id}", messageDto);
     }
 }
