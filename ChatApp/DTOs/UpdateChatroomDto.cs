@@ -2,10 +2,8 @@
 
 namespace ChatApp.DTOs;
 
-public class CreateUserDto
+public class UpdateChatroomDto
 {
-    [Required]
-    public string? Login { get; set; }
     [Required]
     public string? Name { get; set; }
 }

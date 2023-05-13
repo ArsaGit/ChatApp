@@ -2,8 +2,8 @@
 
 public class MessageDto
 {
-    public Guid Id { get; set; }
-    public Guid? SenderId { get; set; }
-    public DateTime? DateCreated { get; set; }
+    // public long Id { get; set; }
+    public string? SenderName { get; set; }
+    public DateTime? DateCreated { get; set; } = DateTime.Now;
     public string? Text { get; set; }
 }

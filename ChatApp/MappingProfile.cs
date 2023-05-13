@@ -9,12 +9,14 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
-        CreateMap<User, UserDto>();
-        CreateMap<Chatroom, ChatroomDto>();
+        CreateMap<ChatRoom, ChatroomDto>();
         CreateMap<Message, MessageDto>();
+        // CreateMap<Message, MessageDto>()
+        //     .ForMember(dest => dest.SenderName,
+        //         opt => 
+        //             opt.MapFrom(src => src.Sender.UserName));
         
-        CreateMap<CreateUserDto, User>();
-        CreateMap<CreateChatroomDto, Chatroom>();
+        CreateMap<CreateChatroomDto, ChatRoom>();
         CreateMap<CreateMessageDto, Message>();
     }
 }

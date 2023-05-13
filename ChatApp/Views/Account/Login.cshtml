@@ -1,0 +1,30 @@
+﻿@page
+@model ChatApp.Models.LoginViewModel
+
+@* @{ *@
+@*     ViewData["Title"] = "Login"; *@
+@* } *@
+
+<h2>Log in</h2>
+
+@using (Html.BeginForm("Login", "Account", new { returnUrl = ViewBag.ReturnUrl }, FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+
+    <div class="form-group">
+        @Html.LabelFor(m => m.Name)
+        @Html.TextBoxFor(m => m.Name, new { @class = "form-control" })
+    </div>
+
+    <div class="form-group">
+        @Html.LabelFor(m => m.Password)
+        @Html.PasswordFor(m => m.Password, new { @class = "form-control" })
+    </div>
+
+    <div class="form-group">
+        @Html.CheckBoxFor(m => m.RememberMe)
+        @Html.LabelFor(m => m.RememberMe, new { @class = "form-check-label" })
+    </div>
+
+    <button type="submit" class="btn btn-primary">Log in</button>
+}

@@ -1,7 +1,14 @@
 using ChatApp.Contexts;
+using ChatApp.Hubs;
+using ChatApp.Models;
+using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+builder.Services.AddControllersWithViews();
 
 //mapper
 builder.Services.AddAutoMapper(typeof(Program));
@@ -18,6 +25,21 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<ChatAppContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
+
+//identity
+builder.Services.AddIdentity<User, IdentityRole>()
+    .AddEntityFrameworkStores<ChatAppContext>()
+    .AddDefaultTokenProviders();
+
+//signalR
+builder.Services.AddSignalR();
+
+//paths
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.LogoutPath = "/Account/Logout";
 });
 
 var app = builder.Build();
@@ -46,6 +68,12 @@ app.UseAuthorization();
 
 app.MapRazorPages();
 
+app.MapHub<ChatHub>("/chat");
+
 app.MapControllers();
+
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();

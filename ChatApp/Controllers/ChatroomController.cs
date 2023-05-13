@@ -1,37 +1,41 @@
 ﻿using AutoMapper;
 using ChatApp.Contexts;
 using ChatApp.DTOs;
+using ChatApp.Hubs;
 using ChatApp.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace ChatApp.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("/Api/[controller]")]
 public class ChatroomController : ControllerBase
 {
     private readonly ChatAppContext _context;
     private readonly IMapper _mapper;
+    private readonly IHubContext<ChatHub> _hubContext;
 
-    public ChatroomController(ChatAppContext context, IMapper mapper)
+    public ChatroomController(ChatAppContext context, IMapper mapper, IHubContext<ChatHub> hubContext)
     {
         _context = context;
         _mapper = mapper;
+        _hubContext = hubContext;
     }
 
     [HttpGet]
     public async Task<IActionResult> GetRooms()
     {
-        var rooms = await _context.Chatrooms.Where(r => !r.IsDeleted).ToListAsync();
+        var rooms = await _context.ChatRooms.Where(r => !r.IsDeleted).ToListAsync();
         var roomDtos = _mapper.Map<ICollection<ChatroomDto>>(rooms);
         return Ok(roomDtos);
     }
 
-    [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetRoom([FromRoute] Guid id)
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetRoom([FromRoute] int id)
     {
-        var room = await _context.Chatrooms.FindAsync(id);
+        var room = await _context.ChatRooms.FindAsync(id);
         if (room is { IsDeleted: true }) return NotFound();
         
         var roomDto = _mapper.Map<ChatroomDto>(room);
@@ -39,39 +43,51 @@ public class ChatroomController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddRoom([FromBody] CreateChatroomDto chatroomDto)
+    [Route("AddRoom")]
+    public async Task<RedirectResult> AddRoom([FromBody] CreateChatroomDto chatroomDto)
     {
-        var users = await _context.Users.Where(u => chatroomDto.UserIds.Contains(u.Id)).ToListAsync();
-        var room = new Chatroom { Id = Guid.NewGuid(), Name = chatroomDto.Name, Users = users };
-        _context.Chatrooms.Add(room);
-        await _context.SaveChangesAsync();
-        var roomDto = _mapper.Map<ChatroomDto>(room);
-        return Created($"/{roomDto.Id}", roomDto);
-    }
-
-    [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> DeleteRoom([FromRoute] Guid id)
-    {
-        var room = await _context.Chatrooms.FindAsync(id);
-        if (room == null) return NotFound();
+        var user = await _context.Users.FindAsync(chatroomDto.UserId);
         
-        room.IsDeleted = true;
-        _context.Chatrooms.Update(room);
-        await _context.SaveChangesAsync();
-        return NoContent();
+        if (!string.IsNullOrEmpty(chatroomDto.Name))
+        {
+            var chatRoom = new ChatRoom
+            {
+                Name = chatroomDto.Name,
+                IsDeleted = false,
+                
+            };
+
+            if (user != null) chatRoom.Users.Add(user);
+
+            var addedRoom = _context.ChatRooms.Add(chatRoom);
+            await _context.SaveChangesAsync();
+
+            // await _hubContext.Clients.Users(user.Id)
+            //     .SendAsync("ReceiveInvite", addedRoom.Entity.Id, chatroomDto.Name);
+        }
+
+        return Redirect("/");
     }
-
-    [HttpPatch("{id:guid}")]
-    public async Task<IActionResult> UpdateRoom(
-        [FromRoute] Guid id, 
-        [FromBody] UpdateChatroomDto updateChatroomDto)
+    
+    [HttpPost]
+    [Route("InviteUser")]
+    public async Task<RedirectResult> InviteUser([FromBody] InviteUserDto inviteUserDto)
     {
-        var room = await _context.Chatrooms.FindAsync(id);
-        if (room == null) return NotFound();
+        var user1 = await _context.Users.FirstOrDefaultAsync(u => u.UserName == inviteUserDto.UserName);
+        var userId = user1.Id;
+        var chatRoom = await _context.ChatRooms.FindAsync(inviteUserDto.RoomId);
 
-        room.Name = updateChatroomDto.Name;
-        _context.Chatrooms.Update(room);
-        await _context.SaveChangesAsync();
-        return NoContent();
+        if (chatRoom != null && !string.IsNullOrEmpty(userId))
+        {
+            var user2 = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId && !u.IsDeleted);
+
+            if (user2 != null)
+            {
+                chatRoom.Users.Add(user2);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        return Redirect("/");
     }
 }

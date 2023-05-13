@@ -7,5 +7,5 @@ public class CreateChatroomDto
     [Required]
     public string? Name { get; set; }
     [Required]
-    public ICollection<Guid>? UserIds { get; set; }
+    public string? UserId { get; set; }
 }

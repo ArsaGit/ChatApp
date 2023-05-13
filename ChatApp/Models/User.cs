@@ -1,10 +1,10 @@
-﻿namespace ChatApp.Models;
+﻿using Microsoft.AspNetCore.Identity;
 
-public class User
+namespace ChatApp.Models;
+
+public class User : IdentityUser
 {
-    public Guid Id { get; set; }
-    public string? Login { get; set; }
-    public string? Name { get; set; }
-    public ICollection<Chatroom> Chatrooms { get; set; } = new List<Chatroom>();
     public bool IsDeleted { get; set; }
+    
+    public List<ChatRoom>? ChatRooms { get; set; } = new List<ChatRoom>();
 }

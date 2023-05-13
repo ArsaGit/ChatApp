@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ChatApp.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("Api/[controller]")]
 public class MessageController : ControllerBase
 {
     private readonly ChatAppContext _context;
@@ -20,25 +20,18 @@ public class MessageController : ControllerBase
         _mapper = mapper;
     }
     
-    [HttpGet]
-    public async Task<IActionResult> GetMessages(Guid? roomId)
+    [HttpGet("/Api/Messages")]
+    public async Task<IActionResult> GetMessages(int roomId)
     {
-        List<Message> messages;
-        if (roomId == null)
-        {
-            messages = await _context.Messages.ToListAsync();
-        }
-        else
-        {
-            messages = await _context.Messages.Where(m => m.RoomId.Equals(roomId))
-                .ToListAsync();
-        }
+        var messages = await _context.Messages
+            .Where(m => m.ChatRoomId.Equals(roomId)).OrderByDescending(m=>m.DateCreated)
+            .ToListAsync();
         var messageDtos = _mapper.Map<ICollection<MessageDto>>(messages);
         return Ok(messageDtos);
     }
     
-    [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetMessage([FromRoute] Guid id)
+    [HttpGet("{id:long}")]
+    public async Task<IActionResult> GetMessage([FromRoute] long id)
     {
         var message = await _context.Messages.FindAsync(id);
         var messageDto = _mapper.Map<MessageDto>(message);
@@ -49,9 +42,10 @@ public class MessageController : ControllerBase
     public async Task<IActionResult> AddMessage([FromBody] CreateMessageDto createMessageDto)
     {
         var message = _mapper.Map<Message>(createMessageDto);
+        var user = await _context.Users.FindAsync(message.SenderId);
+        message.SenderName = user.UserName;
         _context.Messages.Add(message);
         await _context.SaveChangesAsync();
-        var messageDto = _mapper.Map<MessageDto>(message);
-        return Created($"/{messageDto.Id}", messageDto);
+        return NoContent();
     }
 }
